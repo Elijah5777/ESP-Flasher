@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ESP Flash Web Tool</title>
+</head>
+<body>
+  <h1>ESP Flash Tool</h1>
+  <button id="connect">Connect to ESP</button>
+  <input type="file" id="firmware" />
+  <button id="flash">Flash Firmware</button>
+  <pre id="log"></pre>
+
+  <script>
+    let port;
+    let writer;
+
+    document.getElementById('connect').addEventListener('click', async () => {
+      try {
+        port = await navigator.serial.requestPort();
+        await port.open({ baudRate: 115200 });
+        writer = port.writable.getWriter();
+        log('Connected to ESP!');
+      } catch (err) {
+        log('Error: ' + err);
+      }
+    });
+
+    document.getElementById('flash').addEventListener('click', async () => {
+      const fileInput = document.getElementById('firmware');
+      if (!fileInput.files.length) {
+        log('Select a firmware file first!');
+        return;
+      }
+      const file = fileInput.files[0];
+      const arrayBuffer = await file.arrayBuffer();
+      const data = new Uint8Array(arrayBuffer);
+      
+      try {
+        for (let byte of data) {
+          await writer.write(new Uint8Array([byte]));
+        }
+        log('Firmware sent!');
+      } catch (err) {
+        log('Flashing failed: ' + err);
+      }
+    });
+
+    function log(msg) {
+      const logEl = document.getElementById('log');
+      logEl.textContent += msg + '\n';
+    }
+  </script>
+</body>
+</html>
